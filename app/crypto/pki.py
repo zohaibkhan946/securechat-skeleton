@@ -65,12 +65,32 @@ def verify_certificate_chain(cert: x509.Certificate, ca_cert: x509.Certificate) 
         # Get CA's public key
         ca_public_key = ca_cert.public_key()
         
-        # Verify signature
+        # Get signature algorithm from certificate
+        sig_algorithm = cert.signature_algorithm_oid
+        
+        # Determine hash algorithm from signature algorithm OID
+        from cryptography.x509.oid import SignatureAlgorithmOID
+        if sig_algorithm == SignatureAlgorithmOID.RSA_WITH_MD5:
+            hash_alg = hashes.MD5()
+        elif sig_algorithm == SignatureAlgorithmOID.RSA_WITH_SHA1:
+            hash_alg = hashes.SHA1()
+        elif sig_algorithm == SignatureAlgorithmOID.RSA_WITH_SHA256:
+            hash_alg = hashes.SHA256()
+        elif sig_algorithm == SignatureAlgorithmOID.RSA_WITH_SHA384:
+            hash_alg = hashes.SHA384()
+        elif sig_algorithm == SignatureAlgorithmOID.RSA_WITH_SHA512:
+            hash_alg = hashes.SHA512()
+        else:
+            # Default to SHA256
+            hash_alg = hashes.SHA256()
+        
+        # Verify signature using PKCS1v15 padding
+        from cryptography.hazmat.primitives.asymmetric import padding
         ca_public_key.verify(
             cert.signature,
             cert.tbs_certificate_bytes,
-            cert.signature_algorithm_hash,
-            default_backend()
+            padding.PKCS1v15(),
+            hash_alg
         )
         
         # Verify issuer matches CA subject
