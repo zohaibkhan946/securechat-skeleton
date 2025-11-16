@@ -1,0 +1,2 @@
+"""SecureChat - Application package."""
+
